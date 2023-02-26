@@ -8,10 +8,10 @@
 .Os
 .Sh NAME
 .Nm palera1n
-.Nd iOS 15+ arm64 iOS/iPadOS jailbreaking tool
+.Nd iOS 15.0-16.3 arm64 iOS/iPadOS jailbreaking tool
 .Sh SYNOPSIS
 .Nm
-.Op Fl BcdDEfhlnLOpRsvV
+.Op Fl BcdDEfhlnLOpRsvVI
 .Op Fl e Ar Boot arguments
 .Op Fl k Ar Pongo image
 .Op Fl o Ar overlay file
@@ -20,7 +20,7 @@
 .Op Fl i Ar checkra1n file
 .Sh DESCRIPTION
 .Nm
-jailbreaks any iOS/iPadOS device with an arm64 (arm64e excluded) on iOS 15+,
+jailbreaks any iOS/iPadOS device with an arm64 (arm64e excluded) on iOS 15.0-16.3,
 utilizing the
 .Em checkm8
 bootROM exploit.
@@ -49,7 +49,7 @@ from settings app counts as a restore.
 A backup may be used in this case.
 .Pp
 .Sh SUPPORTED DEVICES
-As described above, arm64 iOS/iPadOS 15+ devices are supported, here is an explicit
+As described above, arm64 iOS/iPadOS 15.0-16.3 devices are supported, here is an explicit
 list of supported devicecs:
 
 .Bl -tag -compact
@@ -110,7 +110,7 @@ When used with
 Create the new APFS volume required for rootful. Will fail if one already exists.
 .It Fl d , -demote
 Set the effective production fuse to 0, so as to enable hardware debugging features.
-.It Fl D , -dfuhelper-only
+.It Fl D , -dfuhelper
 Execute the DFU helper to guide the user into putting the device into DFU mode
 then exit.
 .It Fl e , -boot-args Ar boot arguments
@@ -122,7 +122,7 @@ and cannot be overriden. Additionally, the
 .Em wdt=-1
 argument is used during fakefs setup.
 .It Fl E , -enter-recovery
-Exit after entering recovery mode.q
+Exit after entering recovery mode.
 .It Fl f , -fakefs
 Jailbreak in rootful mode.
 .It Fl h , -help
@@ -187,6 +187,8 @@ as well as any jailbreak-specific apps you have installed.
 Enable debug logging. The option may be repeated for extra verbosity.
 .It Fl V , -verbose-boot
 Boots the device in verbose mode, allowing boot logs to be seen.
+.It Fl I , -device-info
+Prints info about device and exits.
 .El
 .Sh ENVIRONMENTAL VARIABLES
 .Bl -tag -width -indent
@@ -205,7 +207,7 @@ To (re-)jailbreak in rootless mode:
 To setup fakefs for rootful mode:
 .Pp
 .Dl "palera1n -fc"
-.Ppq
+.Pp
 After the device has rebooted, follow the following example.
 .Pp
 To re-jailbreak in rootful mode:
@@ -295,9 +297,9 @@ has been mounted.
 .Nm
 may crash if the machine it is running on:
 .Pp
-.Dl "- Has no USB ports"
-.Pp
 .Dl "- Has non-compliant USB devices plugged in"
+.Pp
+The exploit may also work less reliably on some hosts, like AMD desktops, or some MediaTek devices.
 .Sh NOTES
 .Nm
 injects a dylib into launchd to allow the

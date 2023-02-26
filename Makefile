@@ -6,7 +6,7 @@ STRIP = strip
 CC ?= cc
 CFLAGS += -I$(DEP)/include -I$(SRC)/include -I$(SRC)
 CFLAGS += -Wall -Wextra -DPALERAIN_VERSION=\"2.0.0\" -Wall -Wextra -Wno-unused-parameter
-CFLAGS += -Wno-unused-variable -I$(SRC)/src -std=c99 -pedantic-errors -D_C99_SOURCE -D_POSIX_C_SOURCE=199506L -D_DARWIN_C_SOURCE
+CFLAGS += -Wno-unused-variable -I$(SRC)/src -std=c99 -pedantic-errors -D_C99_SOURCE -D_POSIX_C_SOURCE=200112L -D_DARWIN_C_SOURCE
 LIBS += $(DEP)/lib/libimobiledevice-1.0.a $(DEP)/lib/libirecovery-1.0.a $(DEP)/lib/libusbmuxd-2.0.a
 LIBS += $(DEP)/lib/libimobiledevice-glue-1.0.a $(DEP)/lib/libplist-2.0.a -pthread
 ifeq ($(TARGET_OS),)
@@ -18,7 +18,7 @@ ifeq (,$(findstring version-min=, $(CFLAGS)))
 CFLAGS += -mmacosx-version-min=10.8
 endif
 LDFLAGS += -Wl,-dead_strip
-LIBS += -framework CoreFoundation -framework SystemConfiguration -framework IOKit -framework Security
+LIBS += -framework CoreFoundation -framework IOKit
 else
 CFLAGS += -fdata-sections -ffunction-sections
 LDFLAGS += -static -no-pie -Wl,--gc-sections
@@ -34,6 +34,9 @@ CFLAGS += -O0 -g -DDEV_BUILD -fno-omit-frame-pointer
 ifeq ($(ASAN),1)
 BUILD_STYLE=ASAN
 CFLAGS += -fsanitize=address,undefined -fsanitize-address-use-after-return=runtime
+else ifeq ($(TSAN),1)
+BUILD_STYLE=TSAN
+CFLAGS += -fsanitize=thread,undefined
 else
 BUILD_STYLE = DEVELOPMENT
 endif
@@ -41,6 +44,7 @@ else
 CFLAGS += -Os -g
 BUILD_STYLE = RELEASE
 endif
+LIBS += -lc
 
 ifneq ($(BAKERAIN_DEVELOPE_R),)
 CFLAGS += -DBAKERAIN_DEVELOPE_R="\"$(BAKERAIN_DEVELOPE_R)\""

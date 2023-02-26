@@ -4,6 +4,16 @@ OBJECTS  = main.o dfuhelper.o devhelper.o lockdown_helper.o
 OBJECTS += optparse.o override_file.o log.o lock_vars.o credits.o
 OBJECTS += fake_embedded.o exec_checkra1n.o pongo_helper.o
 
+ifeq (,$(findstring macosx, $(CFLAGS)))
+ifneq (,$(findstring version-min=, $(CFLAGS)))
+OBJECTS += xxd-libcheckra1nhelper.dylib.o
+endif
+endif
+
+ifeq ($(FORCE_HELPER),1)
+OBJECTS += xxd-libcheckra1nhelper.dylib.o
+CFLAGS += -DFORCE_HELPER
+endif
 
 ifneq ($(NO_RAMDISK),1)
 OBJECTS += xxd-ramdisk.dmg.o
@@ -38,6 +48,8 @@ LDID = ldid
 ifeq ($(TARGET_OS),Darwin)
 ifneq ($(USE_LIBUSB),1)
 OBJECTS += usb_iokit.o
+else
+LIBS += -framework SystemConfiguration -framework Security
 endif
 else
 USE_LIBUSB = 1
@@ -91,6 +103,9 @@ ifneq (,$(findstring version-min=, $(CFLAGS)))
 endif
 endif
 
+libcheckra1nhelper.dylib: chkstk.S
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared chkstk.S -o libcheckra1nhelper.dylib
+
 checkra1n-kpf-pongo:
 	curl -LO https://cdn.nickchan.lol/palera1n/artifacts/kpf/checkra1n-kpf-pongo
 
@@ -101,6 +116,6 @@ binpack.dmg:
 	curl -LO https://cdn.nickchan.lol/palera1n/c-rewrite/deps/binpack.dmg
 
 clean:
-	rm -rf *.o palera1n checkra1n checkra1n.c palera1n.dSYM
+	rm -rf *.o palera1n checkra1n checkra1n.c palera1n.dSYM libcheckra1nhelper.dylib
 
 .PHONY: all clean

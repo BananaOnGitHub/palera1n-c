@@ -16,7 +16,6 @@
 #include <signal.h>
 #include <pthread.h>
 #include <inttypes.h>
-#include <getopt.h>
 #include <errno.h>
 #include <spawn.h>
 #include <sys/mman.h>
@@ -56,7 +55,7 @@ void thr_cleanup(void* ptr) {
 	*(int*)ptr = 0;
 }
 
-int build_checks() {
+int build_checks(void) {
 #if defined(__APPLE__)
 #ifndef NO_CHECKRAIN
 	struct mach_header_64* c1_header = (struct mach_header_64*)&checkra1n[0];
@@ -91,6 +90,12 @@ int build_checks() {
 bool tui_started = false;
 #endif
 
+#ifdef USE_LIBUSB
+void log_cb(libusb_context *ctx, enum libusb_log_level level, const char *str) {
+    LOG(level + 0, str);
+}
+#endif
+
 int palera1n(int argc, char *argv[]) {
 	int ret = 0;
 	pthread_mutex_init(&log_mutex, NULL);
@@ -98,8 +103,9 @@ int palera1n(int argc, char *argv[]) {
 	pthread_mutex_init(&found_pongo_mutex, NULL);
 	pthread_mutex_init(&ecid_dfu_wait_mutex, NULL);
 	if ((ret = build_checks())) return ret;
-	print_credits();
 	if ((ret = optparse(argc, argv))) goto cleanup;
+	if (!checkrain_option_enabled(host_flags, host_option_device_info))
+		print_credits();
 	if (checkrain_option_enabled(host_flags, host_option_palerain_version)) goto normal_exit;
 #ifdef DEV_BUILD
 	if (checkrain_option_enabled(host_flags, host_option_tui)) {
@@ -108,7 +114,23 @@ int palera1n(int argc, char *argv[]) {
 		else goto normal_exit;
 	}
 #endif
-	LOG(LOG_INFO, "Waiting for devices");
+#ifdef USE_LIBUSB
+	{
+		libusb_set_log_cb(NULL, log_cb, LIBUSB_LOG_CB_GLOBAL);
+		libusb_context* ctx = NULL;
+		int test_libusb = libusb_init(&ctx);
+		if (test_libusb) {
+			LOG(LOG_ERROR, "cannot initialize libusb: %d (%s)\n", test_libusb, libusb_strerror(test_libusb));
+			libusb_exit(ctx);
+			goto cleanup;
+		}
+	libusb_exit(ctx);
+	}
+#endif
+
+	if (!checkrain_option_enabled(host_flags, host_option_device_info))
+		LOG(LOG_INFO, "Waiting for devices");
+	
 	pthread_create(&pongo_thread, NULL, pongo_helper, NULL);
 	pthread_create(&dfuhelper_thread, NULL, dfuhelper, NULL);
 	pthread_join(dfuhelper_thread, NULL);
@@ -117,6 +139,7 @@ int palera1n(int argc, char *argv[]) {
 		checkrain_option_enabled(host_flags, host_option_reboot_device) || 
 		checkrain_option_enabled(host_flags, host_option_exit_recovery) || 
 		checkrain_option_enabled(host_flags, host_option_enter_recovery) || 
+		checkrain_option_enabled(host_flags, host_option_device_info) || 
 		device_has_booted)
 		goto normal_exit;
 	if (exec_checkra1n()) goto cleanup;

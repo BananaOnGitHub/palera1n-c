@@ -20,3 +20,5 @@ docs/*.html
 build
 src/*.dmg.c
 .idea
+src/stage2/
+src/libcheckra1nhelper.dylib*

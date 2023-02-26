@@ -41,6 +41,7 @@ static struct option longopts[] = {
 	{"reboot-device", no_argument, NULL, 'R'},
 	{"exit-recovery", no_argument, NULL, 'n'},
 	{"enter-recovery", no_argument, NULL, 'E'},
+	{"device-info", no_argument, NULL, 'I'},
 #ifdef DEV_BUILD
 	{"test1", no_argument, NULL, '1'},
 	{"test2", no_argument, NULL, '2'},
@@ -59,7 +60,7 @@ static int usage(int e, char* prog_name)
 #endif
 			" [-e boot arguments] [-k Pongo image] [-o overlay file] [-r ramdisk file] [-K KPF file] [-i checkra1n file]\n"
 			"Copyright (C) 2023, palera1n team, All Rights Reserved.\n\n"
-			"iOS/iPadOS 15+ arm64 jailbreaking tool\n\n"
+			"iOS/iPadOS 15.0-16.3 arm64 jailbreaking tool\n\n"
 			"\t--version\t\t\t\tPrint version\n"
 			"\t--force-revert\t\t\t\tRemove jailbreak\n"
 #ifdef DEV_BUILD
@@ -69,7 +70,7 @@ static int usage(int e, char* prog_name)
 			"\t-B, --setup-partial-fakefs\t\tSetup partial fakefs\n"
 			"\t-c, --setup-fakefs\t\t\tSetup fakefs\n"
 			"\t-d, --demote\t\t\t\tDemote\n"
-			"\t-D, --dfuhelper-only\t\t\tExit after entering DFU\n"
+			"\t-D, --dfuhelper\t\t\tExit after entering DFU\n"
 			"\t-e, --boot-args <boot arguments>\tXNU boot arguments\n"
 			"\t-E, --enter-recovery\t\t\tEnter recovery mode\n"
 			"\t-f, --fakefs \t\t\t\tBoots fakefs\n"
@@ -80,6 +81,7 @@ static int usage(int e, char* prog_name)
 			"\t-l, --rootless\t\t\t\tBoots rootless. This is the default\n"
 			"\t-L, --jbinit-log-to-file\t\tMake jbinit log to /cores/jbinit.log (can be read from sandbox while jailbroken)\n"
 			"\t-n, --exit-recovery\t\t\tExit recovery mode\n"
+			"\t-I, --device-info\t\t\tPrint info about the connected device\n"
 			"\t-o, --override-overlay <file>\t\tOverride overlay\n"
 			"\t-O, --disable-ohio\t\t\tDisable Ohio\n"
 			"\t-p, --pongo-shell\t\t\tBoots to PongoOS shell\n"
@@ -106,9 +108,9 @@ int optparse(int argc, char* argv[]) {
 	int index;
 	while ((opt = getopt_long(argc, argv, 
 #ifdef DEV_BUILD
-	"12BcDEhpvVldsOLftRnPe:o:r:K:k:i:", 
+	"12BcDEhpvVldsOLftRnPIe:o:r:K:k:i:", 
 #else
-	"BcDEhpvVldsOLfRnPe:o:r:K:k:i:", 
+	"BcDEhpvVldsOLfRnPIe:o:r:K:k:i:", 
 #endif
 	longopts, NULL)) != -1)
 	{
@@ -222,6 +224,9 @@ int optparse(int argc, char* argv[]) {
 		case 'O':
 			host_flags |= host_option_no_ohio;
 			break;
+		case 'I':
+			host_flags |= host_option_device_info;
+			break;
 #ifdef DEV_BUILD
 		case 't':
 			host_flags |= host_option_tui;
@@ -245,9 +250,7 @@ int optparse(int argc, char* argv[]) {
 		}
 	}
 	if (checkrain_option_enabled(host_flags, host_option_palerain_version)) {
-#ifndef __INTELLISENSE__
 		printf("palera1n version " PALERAIN_VERSION ": " BUILD_DATE "; " BUILD_WHOAMI ":" BUILD_TAG "/" BUILD_STYLE "\n");
-#endif
 		return 0;
 	}
 

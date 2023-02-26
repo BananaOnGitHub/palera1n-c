@@ -11,6 +11,7 @@
 #include <sys/stat.h>           // fstst
 
 #include <palerain.h>
+#include <ANSI-color-codes.h>
 
 bool device_has_booted = 0;
 int pongo_thr_running = 0;
@@ -36,7 +37,7 @@ void *pongo_usb_callback(void *arg) {
 		strncat(xargs_cmd, " wdt=-1", 0x270 - strlen(xargs_cmd) - 1);	
 	}
 	LOG(LOG_INFO, "Found PongoOS USB Device");
-	usb_device_handle_t handle = *(usb_device_handle_t *)arg;
+	usb_device_handle_t handle = (((stuff_t *)arg)->handle);
 	issue_pongo_command(handle, NULL);	
 	issue_pongo_command(handle, "fuse lock");
 	issue_pongo_command(handle, "sep auto");
@@ -68,12 +69,22 @@ void *pongo_usb_callback(void *arg) {
 	if (checkrain_option_enabled(host_flags, host_option_pongo_full)) goto done;
 	issue_pongo_command(handle, "bootx");
 	LOG(LOG_INFO, "Booting Kernel...");
+	if (checkrain_option_enabled(palerain_flags, palerain_option_setup_partial_root)) {
+		LOG(LOG_INFO, "Please wait up to 5 minutes for the bindfs to be created.");
+		LOG(LOG_INFO, "Once the device boots up to iOS, run again without the -B (Create BindFS) option to jailbreak.");
+	} else if (checkrain_option_enabled(palerain_flags, palerain_option_setup_rootful)) {
+		LOG(LOG_INFO, "Please wait up to 10 minutes for the fakefs to be created.");
+		LOG(LOG_INFO, "Once the device boots up to iOS, run again without the -c (Create FakeFS) option to jailbreak.");
+	}
 	if (dfuhelper_thr_running) {
 		pthread_cancel(dfuhelper_thread);
 		dfuhelper_thr_running = false;
 	}
 done:
 	device_has_booted = true;
+#ifdef USE_LIBUSB
+	libusb_unref_device(((stuff_t *)arg)->dev);
+#endif
 	set_spin(0);
 	return NULL;
 }
@@ -149,19 +160,25 @@ int upload_pongo_file(usb_device_handle_t handle, unsigned char *buf, unsigned i
 		ret = USBBulkUpload(handle, buf, buf_len);
 		if (ret == USB_RET_SUCCESS)
 		{
-			LOG(LOG_VERBOSE, "Uploaded %llu bytes to PongoOS", (unsigned long long)buf_len);
+		    if (verbose < 3 || verbose > 4) {
+				LOG(LOG_VERBOSE, "Uploaded %llu bytes to PongoOS", (unsigned long long)buf_len);
+    		} else {
+        		printf("/send mem:%p:%p\n" BCYN "[Uploaded %llu bytes]\n" CRESET, (void*)buf, (void*)(buf + buf_len), (unsigned long long)buf_len);
+    		}
 		}
 	}
+	if (verbose >= 3) printf("pongoOS> ");
 	return ret;
 }
 
 void io_start(stuff_t *stuff)
 {
-    int r = pthread_create(&stuff->th, NULL, &pongo_usb_callback, &stuff->handle);
+    int r = pthread_create(&stuff->th, NULL, &pongo_usb_callback, stuff);
     if(r != 0)
     {
         ERR("pthread_create: %s", strerror(r));
-        exit(-1); // TODO: ok with libusb?
+        set_spin(0);
+		return;
     }
     pthread_join(stuff->th, NULL);
 }
@@ -172,14 +189,19 @@ void io_stop(stuff_t *stuff)
     if(r != 0)
     {
         ERR("pthread_cancel: %s", strerror(r));
-        exit(-1); // TODO: ok with libusb?
+        set_spin(0);
+		return;
     }
     r = pthread_join(stuff->th, NULL);
     if(r != 0)
     {
         ERR("pthread_join: %s", strerror(r));
-        exit(-1); // TODO: ok with libusb?
+        set_spin(0);
+		return;
     }
+#ifdef USE_LIBUSB
+	libusb_unref_device(stuff->dev);
+#endif
 }
 
 void write_stdout(char *buf, uint32_t len)
