@@ -56,6 +56,7 @@ int connected_normal_mode(const usbmuxd_device_info_t *usbmuxd_device) {
 	if (strcmp(dev.CPUArchitecture, "arm64")) {
 		devinfo_free(&dev);
 		LOG(LOG_WARNING, "Ignoring non-arm64 device...");
+		LOG(LOG_WARNING, "palera1n doesn't, and never will, work on non-checkm8 devices");
 		return -1;
 	}
 	if (!strncmp(dev.productType, "iPhone10,", strlen("iPhone10,"))) {
@@ -114,6 +115,7 @@ void* connected_recovery_mode(struct irecv_device_info* info) {
 	info = NULL;
 	if (!cpid_is_arm64(cpid)) {
 		LOG(LOG_WARNING, "Ignoring non-arm64 device...");
+		LOG(LOG_WARNING, "palera1n doesn't, and never will, work on non-checkm8 devices");
 		return NULL;
 	}
 	sleep(1);
